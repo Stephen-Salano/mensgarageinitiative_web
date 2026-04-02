@@ -7,39 +7,68 @@ interface Particle {
   y: number;
   vx: number;
   vy: number;
+  ax: number;
+  ay: number;
   size: number;
   opacity: number;
+  twinklePhase: number;
+  twinkleSpeed: number;
 }
 
-const PARTICLE_COUNT = 80;
+const PARTICLE_COUNT = 90;
 
-function createParticle(id: number): Particle {
+function initParticle(id: number, W: number, H: number): Particle {
+  const angle = Math.random() * Math.PI * 2;
+  const speed = Math.random() * 0.25 + 0.05;
   return {
     id,
-    x: Math.random() * (typeof window !== "undefined" ? window.innerWidth : 1440),
-    y: Math.random() * (typeof window !== "undefined" ? window.innerHeight : 900),
-    vx: (Math.random() - 0.5) * 0.3,
-    vy: (Math.random() - 0.5) * 0.3,
-    size: Math.random() * 1.5 + 0.5,
-    opacity: Math.random() * 0.55 + 0.1,
+    x: Math.random() * W,
+    y: Math.random() * H,
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed,
+    ax: 0,
+    ay: 0,
+    size: Math.random() * 1.4 + 0.4,
+    opacity: Math.random() * 0.55 + 0.15,
+    twinklePhase: Math.random() * Math.PI * 2,
+    twinkleSpeed: Math.random() * 0.02 + 0.005,
   };
+}
+
+interface ArcDims {
+  cx: number;
+  cy: number;
+  rx: number;
+  ry: number;
+  W: number;
+  H: number;
 }
 
 export default function ComingSoon() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const particlesRef = useRef<Particle[]>([]);
   const mouseRef = useRef({ x: -9999, y: -9999 });
   const animFrameRef = useRef<number>(0);
+  const arcRef = useRef<ArcDims | null>(null);
+  const [arcDims, setArcDims] = useState<ArcDims | null>(null);
+
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
-  const initParticles = useCallback(() => {
-    particlesRef.current = Array.from({ length: PARTICLE_COUNT }, (_, i) =>
-      createParticle(i)
-    );
+  const computeArc = useCallback((): ArcDims => {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    const rx = W * 0.74;
+    const ry = H * 0.82;
+    const cx = W / 2;
+    // place center below viewport so the top of the ellipse is ~27% from bottom
+    const cy = H + ry * 0.67;
+    return { cx, cy, rx, ry, W, H };
   }, []);
 
+  // Particles: pure autonomous drift + gentle mouse repulsion
   const animate = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -50,45 +79,58 @@ export default function ComingSoon() {
 
     const mx = mouseRef.current.x;
     const my = mouseRef.current.y;
-    const cursorActive = mx > -100 && my > -100 && mx < canvas.width && my < canvas.height;
+    const hasMouse = mx > 0 && my > 0 && mx < canvas.width;
 
     particlesRef.current.forEach((p) => {
-      if (cursorActive) {
-        const dx = mx - p.x;
-        const dy = my - p.y;
+      // Slow random walk — constant gentle turbulence
+      p.ax = (Math.random() - 0.5) * 0.012;
+      p.ay = (Math.random() - 0.5) * 0.012;
+
+      // Mouse repulsion only — push away, don't attract
+      if (hasMouse) {
+        const dx = p.x - mx;
+        const dy = p.y - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        const maxDist = 160;
-        if (dist < maxDist && dist > 0) {
-          const force = (maxDist - dist) / maxDist;
-          p.vx += (dx / dist) * force * 0.05;
-          p.vy += (dy / dist) * force * 0.05;
+        const repelRadius = 120;
+        if (dist < repelRadius && dist > 0) {
+          const force = ((repelRadius - dist) / repelRadius) * 0.06;
+          p.ax += (dx / dist) * force;
+          p.ay += (dy / dist) * force;
         }
       }
 
-      p.vx += (Math.random() - 0.5) * 0.018;
-      p.vy += (Math.random() - 0.5) * 0.018;
+      p.vx += p.ax;
+      p.vy += p.ay;
 
-      const maxSpeed = 1.2;
+      // Cap speed
       const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      const maxSpeed = 0.55;
       if (speed > maxSpeed) {
         p.vx = (p.vx / speed) * maxSpeed;
         p.vy = (p.vy / speed) * maxSpeed;
       }
 
-      p.vx *= 0.97;
-      p.vy *= 0.97;
+      // Very light damping so they keep drifting
+      p.vx *= 0.992;
+      p.vy *= 0.992;
 
       p.x += p.vx;
       p.y += p.vy;
 
-      if (p.x < 0) p.x = canvas.width;
-      if (p.x > canvas.width) p.x = 0;
-      if (p.y < 0) p.y = canvas.height;
-      if (p.y > canvas.height) p.y = 0;
+      // Wrap around edges
+      if (p.x < -5) p.x = canvas.width + 5;
+      if (p.x > canvas.width + 5) p.x = -5;
+      if (p.y < -5) p.y = canvas.height + 5;
+      if (p.y > canvas.height + 5) p.y = -5;
+
+      // Twinkle
+      p.twinklePhase += p.twinkleSpeed;
+      const twinkle = 0.7 + 0.3 * Math.sin(p.twinklePhase);
+      const finalOpacity = p.opacity * twinkle;
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255, 255, 255, ${p.opacity})`;
+      ctx.fillStyle = `rgba(255, 255, 255, ${finalOpacity})`;
       ctx.fill();
     });
 
@@ -99,33 +141,39 @@ export default function ComingSoon() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const resize = () => {
+    const handleResize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      const dims = computeArc();
+      arcRef.current = dims;
+      setArcDims(dims);
+      particlesRef.current = Array.from({ length: PARTICLE_COUNT }, (_, i) =>
+        initParticle(i, canvas.width, canvas.height)
+      );
     };
-    resize();
-    window.addEventListener("resize", resize);
-    initParticles();
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
     animate();
 
     return () => {
-      window.removeEventListener("resize", resize);
+      window.removeEventListener("resize", handleResize);
       cancelAnimationFrame(animFrameRef.current);
     };
-  }, [initParticles, animate]);
+  }, [animate, computeArc]);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const onMove = (e: MouseEvent) => {
       mouseRef.current = { x: e.clientX, y: e.clientY };
     };
-    const handleMouseLeave = () => {
+    const onLeave = () => {
       mouseRef.current = { x: -9999, y: -9999 };
     };
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseleave", handleMouseLeave);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseleave", onLeave);
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseleave", onLeave);
     };
   }, []);
 
@@ -141,85 +189,175 @@ export default function ComingSoon() {
 
   const containerVariants = {
     hidden: {},
-    visible: {
-      transition: { staggerChildren: 0.18 },
-    },
+    visible: { transition: { staggerChildren: 0.20 } },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 32 },
+    hidden: { opacity: 0, y: 36 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] },
+      transition: { duration: 1.0, ease: [0.22, 1, 0.36, 1] },
+    },
+  };
+
+  // Light column animation — fades in with content
+  const lightVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { duration: 1.6, ease: "easeOut", delay: 0.1 },
     },
   };
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-black flex flex-col items-center justify-center">
-      {/* Particle canvas */}
+
+      {/* ── Particle canvas ── */}
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{ display: "block" }}
+        className="absolute inset-0 pointer-events-none"
+        style={{ zIndex: 0 }}
       />
 
-      {/* ── Planet arc ── */}
-      {/* 1. Wide purple atmospheric glow rising from horizon */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 z-0 pointer-events-none"
-        style={{
-          bottom: "8%",
-          width: "130vw",
-          height: "60vh",
-          background:
-            "radial-gradient(ellipse 65% 50% at 50% 100%, rgba(115,98,138,0.42) 0%, rgba(49,61,90,0.20) 45%, transparent 70%)",
-          filter: "blur(10px)",
-        }}
-      />
+      {/* ── Light column: rises from arc centre up through headline ── */}
+      <motion.div
+        variants={lightVariants}
+        initial="hidden"
+        animate="visible"
+        className="absolute inset-0 pointer-events-none"
+        style={{ zIndex: 2 }}
+      >
+        {/* Wide atmospheric bloom — full viewport height */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            bottom: 0,
+            width: "120vw",
+            height: "100vh",
+            background:
+              "radial-gradient(ellipse 60% 80% at 50% 100%, rgba(115,98,138,0.65) 0%, rgba(49,61,90,0.30) 40%, transparent 68%)",
+            filter: "blur(14px)",
+          }}
+        />
 
-      {/* 2. Tight bright core at the horizon */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 z-0 pointer-events-none"
-        style={{
-          bottom: "9%",
-          width: "80vw",
-          height: "28vh",
-          background:
-            "radial-gradient(ellipse 55% 55% at 50% 100%, rgba(203,197,234,0.65) 0%, rgba(115,98,138,0.22) 45%, transparent 70%)",
-          filter: "blur(5px)",
-        }}
-      />
+        {/* Mid column — reaches headline area */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            bottom: 0,
+            width: "80vw",
+            height: "90vh",
+            background:
+              "radial-gradient(ellipse 48% 70% at 50% 100%, rgba(160,148,200,0.60) 0%, rgba(115,98,138,0.25) 42%, transparent 68%)",
+            filter: "blur(8px)",
+          }}
+        />
 
-      {/* 3. The dark planet body — large ellipse sitting below the fold */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{
-          zIndex: 1,
-          bottom: "-58vh",
-          width: "140vw",
-          height: "72vh",
-          borderRadius: "50%",
-          background: "#060608",
-          boxShadow: "0 -1px 0 0 rgba(160,148,200,0.25), 0 -8px 40px 0 rgba(115,98,138,0.18)",
-        }}
-      />
+        {/* Tight bright core — concentrated near horizon, punches highest */}
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            transform: "translateX(-50%)",
+            bottom: "15%",
+            width: "45vw",
+            height: "65vh",
+            background:
+              "radial-gradient(ellipse 42% 65% at 50% 100%, rgba(203,197,234,0.70) 0%, rgba(160,148,200,0.30) 42%, transparent 68%)",
+            filter: "blur(4px)",
+          }}
+        />
+      </motion.div>
 
-      {/* 4. The thin bright horizon rim on top of the planet */}
-      <div
-        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-        style={{
-          zIndex: 2,
-          bottom: "calc(14vh - 1px)",
-          width: "110vw",
-          height: "2px",
-          background:
-            "radial-gradient(ellipse 55% 100% at 50% 50%, rgba(225,220,245,0.90) 0%, rgba(160,148,200,0.40) 38%, transparent 68%)",
-          filter: "blur(0.8px)",
-        }}
-      />
+      {/* ── SVG planet arc — proper curved geometry ── */}
+      {arcDims && (
+        <motion.svg
+          ref={svgRef}
+          variants={lightVariants}
+          initial="hidden"
+          animate="visible"
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            zIndex: 3,
+            pointerEvents: "none",
+            overflow: "visible",
+          }}
+        >
+          <defs>
+            {/* Glow filter for the rim */}
+            <filter id="rim-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur1" />
+              <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur2" />
+              <feMerge>
+                <feMergeNode in="blur1" />
+                <feMergeNode in="blur2" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
 
-      {/* Content */}
+            {/* Gradient for the rim stroke — bright centre, fades to sides */}
+            <linearGradient id="rim-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(160,148,200,0)" />
+              <stop offset="25%" stopColor="rgba(200,193,230,0.5)" />
+              <stop offset="50%" stopColor="rgba(225,220,248,0.92)" />
+              <stop offset="75%" stopColor="rgba(200,193,230,0.5)" />
+              <stop offset="100%" stopColor="rgba(160,148,200,0)" />
+            </linearGradient>
+
+            {/* Clip: only render the portion of the ellipse above the fold */}
+            <clipPath id="above-fold">
+              <rect x="0" y="0" width={arcDims.W} height={arcDims.H} />
+            </clipPath>
+          </defs>
+
+          {/* Dark planet body */}
+          <ellipse
+            cx={arcDims.cx}
+            cy={arcDims.cy}
+            rx={arcDims.rx}
+            ry={arcDims.ry}
+            fill="#05050a"
+            clipPath="url(#above-fold)"
+          />
+
+          {/* Outer glow halo — wide soft stroke */}
+          <ellipse
+            cx={arcDims.cx}
+            cy={arcDims.cy}
+            rx={arcDims.rx}
+            ry={arcDims.ry}
+            fill="none"
+            stroke="url(#rim-gradient)"
+            strokeWidth="12"
+            opacity="0.35"
+            filter="url(#rim-glow)"
+            clipPath="url(#above-fold)"
+          />
+
+          {/* Bright thin rim */}
+          <ellipse
+            cx={arcDims.cx}
+            cy={arcDims.cy}
+            rx={arcDims.rx}
+            ry={arcDims.ry}
+            fill="none"
+            stroke="url(#rim-gradient)"
+            strokeWidth="1.5"
+            opacity="0.9"
+            clipPath="url(#above-fold)"
+          />
+        </motion.svg>
+      )}
+
+      {/* ── Content ── */}
       <motion.div
         className="relative flex flex-col items-center text-center px-6 max-w-2xl w-full"
         style={{ zIndex: 10 }}
@@ -234,7 +372,7 @@ export default function ComingSoon() {
             style={{
               borderColor: "rgba(203,197,234,0.18)",
               background: "rgba(115,98,138,0.12)",
-              color: "rgba(203,197,234,0.65)",
+              color: "rgba(203,197,234,0.60)",
               letterSpacing: "0.15em",
               fontFamily: "'Inter', sans-serif",
               textTransform: "uppercase",
@@ -244,7 +382,7 @@ export default function ComingSoon() {
           </span>
         </motion.div>
 
-        {/* Headline — sans for main text, italic serif for "who wait." */}
+        {/* Headline */}
         <motion.div variants={itemVariants} className="mb-5">
           <h1
             className="leading-tight text-white"
@@ -264,7 +402,6 @@ export default function ComingSoon() {
                 fontStyle: "italic",
                 fontWeight: 400,
                 letterSpacing: "0",
-                color: "rgba(255,255,255,0.92)",
               }}
             >
               who wait.
@@ -272,11 +409,11 @@ export default function ComingSoon() {
           </h1>
         </motion.div>
 
-        {/* Subtext — one short line */}
+        {/* Subtext */}
         <motion.div variants={itemVariants} className="mb-10">
           <p
             style={{
-              color: "rgba(203,197,234,0.50)",
+              color: "rgba(203,197,234,0.48)",
               fontFamily: "'Inter', sans-serif",
               fontSize: "0.95rem",
               letterSpacing: "0.01em",
@@ -310,17 +447,17 @@ export default function ComingSoon() {
                   className="flex-1 px-4 py-3 text-sm outline-none transition-all"
                   style={{
                     background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(203,197,234,0.15)",
+                    border: "1px solid rgba(203,197,234,0.14)",
                     color: "rgba(255,255,255,0.80)",
                     fontFamily: "'Inter', sans-serif",
                     borderRadius: "8px",
                   }}
                   onFocus={(e) => {
-                    e.currentTarget.style.border = "1px solid rgba(203,197,234,0.35)";
+                    e.currentTarget.style.border = "1px solid rgba(203,197,234,0.34)";
                     e.currentTarget.style.background = "rgba(255,255,255,0.08)";
                   }}
                   onBlur={(e) => {
-                    e.currentTarget.style.border = "1px solid rgba(203,197,234,0.15)";
+                    e.currentTarget.style.border = "1px solid rgba(203,197,234,0.14)";
                     e.currentTarget.style.background = "rgba(255,255,255,0.05)";
                   }}
                 />
