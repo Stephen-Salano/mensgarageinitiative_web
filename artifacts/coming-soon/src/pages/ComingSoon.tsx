@@ -13,21 +13,22 @@ interface Particle {
   twinkleSpeed: number;
 }
 
-const PARTICLE_COUNT = 90;
+const PARTICLE_COUNT = 110;
 
 function initParticle(id: number, W: number, H: number): Particle {
   const angle = Math.random() * Math.PI * 2;
-  const speed = Math.random() * 0.20 + 0.04;
+  // Varied speeds: slow drifters + faster movers for depth
+  const speed = Math.random() * 1.1 + 0.3;
   return {
     id,
     x: Math.random() * W,
     y: Math.random() * H,
     vx: Math.cos(angle) * speed,
     vy: Math.sin(angle) * speed,
-    size: Math.random() * 1.3 + 0.35,
-    opacity: Math.random() * 0.50 + 0.12,
+    size: Math.random() * 1.4 + 0.3,
+    opacity: Math.random() * 0.55 + 0.10,
     twinklePhase: Math.random() * Math.PI * 2,
-    twinkleSpeed: Math.random() * 0.018 + 0.004,
+    twinkleSpeed: Math.random() * 0.04 + 0.01,
   };
 }
 
@@ -75,29 +76,30 @@ export default function ComingSoon() {
     const hasMouse = mx > 0 && my > 0 && mx < canvas.width;
 
     particlesRef.current.forEach((p) => {
-      // Constant gentle random walk
-      p.vx += (Math.random() - 0.5) * 0.010;
-      p.vy += (Math.random() - 0.5) * 0.010;
+      // Strong random walk — constantly steers each particle in a new direction
+      p.vx += (Math.random() - 0.5) * 0.10;
+      p.vy += (Math.random() - 0.5) * 0.10;
 
-      // Mouse repulsion
+      // Mouse repulsion — scatter particles on hover
       if (hasMouse) {
         const dx = p.x - mx;
         const dy = p.y - my;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 130 && dist > 0) {
-          const force = ((130 - dist) / 130) * 0.055;
+        if (dist < 140 && dist > 0) {
+          const force = ((140 - dist) / 140) * 0.22;
           p.vx += (dx / dist) * force;
           p.vy += (dy / dist) * force;
         }
       }
 
-      // Speed cap
-      const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-      if (speed > 0.50) { p.vx = (p.vx / speed) * 0.50; p.vy = (p.vy / speed) * 0.50; }
+      // Very soft damping — barely touches momentum so particles keep drifting
+      p.vx *= 0.9985;
+      p.vy *= 0.9985;
 
-      // Very light damping — keeps them drifting perpetually
-      p.vx *= 0.993;
-      p.vy *= 0.993;
+      // Speed cap — clamp so they look natural not frantic
+      const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      const MAX = 1.6;
+      if (speed > MAX) { p.vx = (p.vx / speed) * MAX; p.vy = (p.vy / speed) * MAX; }
 
       p.x += p.vx;
       p.y += p.vy;
