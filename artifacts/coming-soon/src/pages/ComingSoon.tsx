@@ -178,38 +178,29 @@ export default function ComingSoon() {
       {/* Particles */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }} />
 
-      {/* ── Atmospheric glow — wide horizontal ellipses that follow the arc curve, not a circle ── */}
+      {/* ── Glow — small quiet radial bloom centered at the arc peak ── */}
       <motion.div
         variants={glowVariants} initial="hidden" animate="visible"
         className="absolute inset-0 pointer-events-none"
         style={{ zIndex: 2 }}
       >
-        {/* Outer atmospheric haze — very wide, hugs the arc horizontally */}
+        {/* Outer soft haze — moderate size, centered at arc peak */}
         <div style={{
           position: "absolute",
           left: "50%", top: "68%",
-          transform: "translate(-50%, -38%)",
-          width: "100vw", height: "58vh",
-          background: "radial-gradient(ellipse 80% 100% at 50% 72%, rgba(75,58,108,0.52) 0%, rgba(48,40,78,0.16) 48%, transparent 72%)",
-          filter: "blur(28px)",
+          transform: "translate(-50%, -50%)",
+          width: "60vw", height: "60vw",
+          background: "radial-gradient(circle, rgba(85,65,115,0.42) 0%, rgba(50,42,80,0.12) 40%, transparent 68%)",
+          filter: "blur(22px)",
         }} />
-        {/* Mid band — tighter ellipse, more intense purple, still wide */}
+        {/* Inner bright core — tight, right at the peak */}
         <div style={{
           position: "absolute",
           left: "50%", top: "68%",
-          transform: "translate(-50%, -38%)",
-          width: "72vw", height: "44vh",
-          background: "radial-gradient(ellipse 72% 100% at 50% 78%, rgba(118,96,162,0.58) 0%, rgba(78,62,118,0.18) 48%, transparent 70%)",
-          filter: "blur(11px)",
-        }} />
-        {/* Bright core band — very tight, sits right at the rim, punches through */}
-        <div style={{
-          position: "absolute",
-          left: "50%", top: "68%",
-          transform: "translate(-50%, -45%)",
-          width: "44vw", height: "18vh",
-          background: "radial-gradient(ellipse 68% 100% at 50% 88%, rgba(218,208,250,0.78) 0%, rgba(168,152,218,0.22) 50%, transparent 72%)",
-          filter: "blur(3px)",
+          transform: "translate(-50%, -50%)",
+          width: "26vw", height: "26vw",
+          background: "radial-gradient(circle, rgba(210,200,245,0.65) 0%, rgba(155,138,200,0.18) 45%, transparent 70%)",
+          filter: "blur(4px)",
         }} />
       </motion.div>
 
@@ -230,40 +221,25 @@ export default function ComingSoon() {
               <feMerge><feMergeNode in="b1" /><feMergeNode in="b2" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
 
-            {/* Rim gradient — bright at centre, fades along the curve, black on far edges */}
+            {/* Sharp rim line — bright only at the center ~22% of arc, pure black beyond */}
             <linearGradient id="rim-grad" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%"   stopColor="rgba(0,0,0,0)" />
-              <stop offset="18%"  stopColor="rgba(0,0,0,0)" />
-              <stop offset="32%"  stopColor="rgba(205,196,238,0.18)" />
-              <stop offset="44%"  stopColor="rgba(225,218,248,0.68)" />
-              <stop offset="50%"  stopColor="rgba(242,238,255,0.97)" />
-              <stop offset="56%"  stopColor="rgba(225,218,248,0.68)" />
-              <stop offset="68%"  stopColor="rgba(205,196,238,0.18)" />
-              <stop offset="82%"  stopColor="rgba(0,0,0,0)" />
+              <stop offset="37%"  stopColor="rgba(0,0,0,0)" />
+              <stop offset="45%"  stopColor="rgba(215,208,245,0.50)" />
+              <stop offset="50%"  stopColor="rgba(240,236,255,0.97)" />
+              <stop offset="55%"  stopColor="rgba(215,208,245,0.50)" />
+              <stop offset="63%"  stopColor="rgba(0,0,0,0)" />
               <stop offset="100%" stopColor="rgba(0,0,0,0)" />
             </linearGradient>
 
-            {/* Wide atmospheric halo stroke — lit along most of the arc, very soft */}
+            {/* Soft halo stroke — slightly wider than rim, still tight, pure black at edges */}
             <linearGradient id="rim-grad-wide" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%"   stopColor="rgba(0,0,0,0)" />
-              <stop offset="12%"  stopColor="rgba(0,0,0,0)" />
-              <stop offset="26%"  stopColor="rgba(110,88,155,0.14)" />
-              <stop offset="42%"  stopColor="rgba(138,118,188,0.36)" />
-              <stop offset="50%"  stopColor="rgba(155,138,205,0.60)" />
-              <stop offset="58%"  stopColor="rgba(138,118,188,0.36)" />
-              <stop offset="74%"  stopColor="rgba(110,88,155,0.14)" />
-              <stop offset="88%"  stopColor="rgba(0,0,0,0)" />
-              <stop offset="100%" stopColor="rgba(0,0,0,0)" />
-            </linearGradient>
-
-            {/* Extra-wide soft atmospheric band — the outermost haze hugging the arc */}
-            <linearGradient id="rim-grad-haze" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="rgba(0,0,0,0)" />
-              <stop offset="8%"   stopColor="rgba(0,0,0,0)" />
-              <stop offset="22%"  stopColor="rgba(75,58,108,0.10)" />
-              <stop offset="50%"  stopColor="rgba(95,78,138,0.30)" />
-              <stop offset="78%"  stopColor="rgba(75,58,108,0.10)" />
-              <stop offset="92%"  stopColor="rgba(0,0,0,0)" />
+              <stop offset="33%"  stopColor="rgba(0,0,0,0)" />
+              <stop offset="43%"  stopColor="rgba(125,105,168,0.20)" />
+              <stop offset="50%"  stopColor="rgba(148,130,195,0.48)" />
+              <stop offset="57%"  stopColor="rgba(125,105,168,0.20)" />
+              <stop offset="67%"  stopColor="rgba(0,0,0,0)" />
               <stop offset="100%" stopColor="rgba(0,0,0,0)" />
             </linearGradient>
 
@@ -281,36 +257,25 @@ export default function ComingSoon() {
             clipPath="url(#vp-clip)"
           />
 
-          {/* Widest outermost atmospheric haze — follows the arc, very soft */}
-          <ellipse
-            cx={arcDims.cx} cy={arcDims.cy}
-            rx={arcDims.rx} ry={arcDims.ry}
-            fill="none"
-            stroke="url(#rim-grad-haze)"
-            strokeWidth="72"
-            opacity="0.85"
-            clipPath="url(#vp-clip)"
-          />
-
-          {/* Mid glow halo — tighter, more visible */}
+          {/* Soft halo — just a faint glow sitting above the rim, center only */}
           <ellipse
             cx={arcDims.cx} cy={arcDims.cy}
             rx={arcDims.rx} ry={arcDims.ry}
             fill="none"
             stroke="url(#rim-grad-wide)"
-            strokeWidth="28"
-            opacity="0.9"
+            strokeWidth="10"
+            opacity="0.85"
             filter="url(#rim-glow)"
             clipPath="url(#vp-clip)"
           />
 
-          {/* Thin bright rim line — the sharp lit edge */}
+          {/* Thin bright rim line — the only lit part of the arc */}
           <ellipse
             cx={arcDims.cx} cy={arcDims.cy}
             rx={arcDims.rx} ry={arcDims.ry}
             fill="none"
             stroke="url(#rim-grad)"
-            strokeWidth="1.6"
+            strokeWidth="1.5"
             clipPath="url(#vp-clip)"
           />
         </motion.svg>
