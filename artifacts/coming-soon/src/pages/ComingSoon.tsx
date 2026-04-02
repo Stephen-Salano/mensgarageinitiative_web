@@ -176,32 +176,38 @@ export default function ComingSoon() {
       {/* Particles */}
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }} />
 
-      {/* ── Glow column: rises from arc, lights the headline ── */}
+      {/* ── Radial glow — centered exactly at the arc peak, radiates outward like a sun behind the horizon ── */}
       <motion.div
         variants={glowVariants} initial="hidden" animate="visible"
         className="absolute inset-0 pointer-events-none"
         style={{ zIndex: 2 }}
       >
-        {/* Wide atmospheric purple bloom — full height */}
+        {/* Large outer bloom — wide atmospheric halo from the arc peak */}
         <div style={{
-          position: "absolute", left: "50%", transform: "translateX(-50%)",
-          bottom: 0, width: "110vw", height: "100vh",
-          background: "radial-gradient(ellipse 55% 72% at 50% 100%, rgba(115,98,138,0.62) 0%, rgba(49,61,90,0.28) 40%, transparent 68%)",
-          filter: "blur(16px)",
+          position: "absolute",
+          left: "50%", top: "68%",
+          transform: "translate(-50%, -50%)",
+          width: "120vw", height: "120vw",
+          background: "radial-gradient(circle, rgba(90,72,120,0.55) 0%, rgba(49,61,90,0.20) 38%, transparent 65%)",
+          filter: "blur(28px)",
         }} />
-        {/* Tighter column reaching headline */}
+        {/* Mid glow — tighter, more purple */}
         <div style={{
-          position: "absolute", left: "50%", transform: "translateX(-50%)",
-          bottom: 0, width: "75vw", height: "88vh",
-          background: "radial-gradient(ellipse 45% 68% at 50% 100%, rgba(150,138,192,0.55) 0%, rgba(115,98,138,0.22) 43%, transparent 68%)",
-          filter: "blur(8px)",
+          position: "absolute",
+          left: "50%", top: "68%",
+          transform: "translate(-50%, -50%)",
+          width: "80vw", height: "80vw",
+          background: "radial-gradient(circle, rgba(130,110,170,0.50) 0%, rgba(90,72,120,0.18) 42%, transparent 68%)",
+          filter: "blur(12px)",
         }} />
-        {/* Bright core — concentrated near horizon */}
+        {/* Bright inner core — tight hot spot right at the peak */}
         <div style={{
-          position: "absolute", left: "50%", transform: "translateX(-50%)",
-          bottom: "20%", width: "40vw", height: "55vh",
-          background: "radial-gradient(ellipse 40% 62% at 50% 100%, rgba(203,197,234,0.68) 0%, rgba(150,138,192,0.25) 44%, transparent 68%)",
-          filter: "blur(3px)",
+          position: "absolute",
+          left: "50%", top: "68%",
+          transform: "translate(-50%, -50%)",
+          width: "38vw", height: "38vw",
+          background: "radial-gradient(circle, rgba(210,200,240,0.72) 0%, rgba(160,148,200,0.28) 40%, transparent 68%)",
+          filter: "blur(4px)",
         }} />
       </motion.div>
 
@@ -222,22 +228,26 @@ export default function ComingSoon() {
               <feMerge><feMergeNode in="b1" /><feMergeNode in="b2" /><feMergeNode in="SourceGraphic" /></feMerge>
             </filter>
 
-            {/* Rim gradient — bright ONLY at centre top, fades to invisible on sides */}
+            {/* Rim gradient — bright ONLY at the very centre, pure black on the sides */}
             <linearGradient id="rim-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="rgba(180,168,220,0)" />
-              <stop offset="28%"  stopColor="rgba(180,168,220,0.25)" />
-              <stop offset="50%"  stopColor="rgba(228,224,248,0.95)" />
-              <stop offset="72%"  stopColor="rgba(180,168,220,0.25)" />
-              <stop offset="100%" stopColor="rgba(180,168,220,0)" />
+              <stop offset="0%"   stopColor="rgba(0,0,0,0)" />
+              <stop offset="38%"  stopColor="rgba(0,0,0,0)" />
+              <stop offset="46%"  stopColor="rgba(200,192,235,0.45)" />
+              <stop offset="50%"  stopColor="rgba(232,228,252,0.96)" />
+              <stop offset="54%"  stopColor="rgba(200,192,235,0.45)" />
+              <stop offset="62%"  stopColor="rgba(0,0,0,0)" />
+              <stop offset="100%" stopColor="rgba(0,0,0,0)" />
             </linearGradient>
 
-            {/* Same gradient but wider for the outer glow stroke */}
+            {/* Wider soft glow halo — still only centre, fades very fast to black */}
             <linearGradient id="rim-grad-wide" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stopColor="rgba(115,98,138,0)" />
-              <stop offset="30%"  stopColor="rgba(115,98,138,0.18)" />
-              <stop offset="50%"  stopColor="rgba(160,148,200,0.55)" />
-              <stop offset="70%"  stopColor="rgba(115,98,138,0.18)" />
-              <stop offset="100%" stopColor="rgba(115,98,138,0)" />
+              <stop offset="0%"   stopColor="rgba(0,0,0,0)" />
+              <stop offset="32%"  stopColor="rgba(0,0,0,0)" />
+              <stop offset="44%"  stopColor="rgba(130,110,180,0.22)" />
+              <stop offset="50%"  stopColor="rgba(160,148,210,0.58)" />
+              <stop offset="56%"  stopColor="rgba(130,110,180,0.22)" />
+              <stop offset="68%"  stopColor="rgba(0,0,0,0)" />
+              <stop offset="100%" stopColor="rgba(0,0,0,0)" />
             </linearGradient>
 
             {/* Clip to viewport — hide the ellipse below the fold */}
